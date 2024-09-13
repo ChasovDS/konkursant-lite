@@ -2,7 +2,6 @@ fastapi[all]
 uvicorn
 python-jose
 alembic
-passlib[bcrypt]
 itsdangerous
 databases
 sqlalchemy
@@ -11,5 +10,5 @@ python-dotenv
 pydantic
 pydantic-settings
 aiosqlite
-passlib
-bcrypt
+bcrypt==4.0.0
+passlib==1.7.4
