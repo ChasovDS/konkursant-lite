@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.auth import get_current_user
@@ -6,7 +5,7 @@ from src.auth.models import User
 from src.projects.models import Project
 from src.database import async_session
 from src.projects import schemas
-
+import shutil
 
 project_router = APIRouter()
 
@@ -20,15 +19,15 @@ async def create_project(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    new_project = models.Project(**project.dict(), owner_id=current_user.id_user)
+    new_project = Project(**project.dict(), owner_id=current_user.id_user)
     db.add(new_project)
     await db.commit()
     await db.refresh(new_project)
     return new_project
 
 @project_router.post("/uploadfile/")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     file_location = f"files/{file.filename}"
     with open(file_location, "wb") as f:
-        f.write(file.file.read())
+        shutil.copyfileobj(file.file, f)
     return {"file_path": file_location}

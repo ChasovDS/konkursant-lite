@@ -20,7 +20,7 @@ async def shutdown():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # URL вашего React фронт-энд приложения
+    allow_origins=["http://localhost:3000"],  # URL вашего React приложения
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
