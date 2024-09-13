@@ -7,7 +7,6 @@ from src.config import settings
 
 auth_router = APIRouter()
 
-
 @auth_router.post("/register", response_model=schemas.User)
 async def register_user(user_in: schemas.UserCreate, db: AsyncSession = Depends(auth.get_db)):
     user = await auth.get_user_by_email(db, user_in.email)

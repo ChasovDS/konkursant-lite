@@ -1,5 +1,4 @@
 from sqlalchemy import Boolean, Column, String, Integer, Enum, DateTime, func
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
 from src.database import Base, metadata  # Подключение metadata

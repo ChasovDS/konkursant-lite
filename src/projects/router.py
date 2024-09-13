@@ -9,15 +9,17 @@ import shutil
 
 project_router = APIRouter()
 
+
 async def get_db():
     async with async_session() as session:
         yield session
 
+
 @project_router.post("/", response_model=schemas.Project)
 async def create_project(
-    project: schemas.ProjectCreate,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
+        project: schemas.ProjectCreate,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
     new_project = Project(**project.dict(), owner_id=current_user.id_user)
     db.add(new_project)
@@ -25,9 +27,22 @@ async def create_project(
     await db.refresh(new_project)
     return new_project
 
+
 @project_router.post("/uploadfile/")
-async def upload_file(file: UploadFile = File(...), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+async def upload_file(file: UploadFile = File(...), current_user: User = Depends(get_current_user),
+                      db: AsyncSession = Depends(get_db)):
     file_location = f"files/{file.filename}"
     with open(file_location, "wb") as f:
         shutil.copyfileobj(file.file, f)
-    return {"file_path": file_location}
+
+    project = Project(
+        title=f.name,
+        description='',
+        file_path=file_location,
+        owner_id=current_user.id_user
+    )
+    db.add(project)
+    await db.commit()
+    await db.refresh(project)
+
+    return {"file_path": file_location, "project": project}

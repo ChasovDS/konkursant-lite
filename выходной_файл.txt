@@ -1,123 +1,4 @@
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\.env
-Содержимое:
-DATABASE_URL=sqlite+aiosqlite:///./test.db
-SECRET_KEY=your_secret_key
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-
-----------------------------------------
-
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\alembic.ini
-Содержимое:
-# A generic, single database configuration.
-
-[alembic]
-
-script_location = alembic
-prepend_sys_path = .
-version_path_separator = os
-
-# Указание на SQLite базу данных
-sqlalchemy.url = sqlite+aiosqlite:///./test.db
-
-[post_write_hooks]
-
-# Logging configuration
-[loggers]
-keys = root,sqlalchemy,alembic
-
-[handlers]
-keys = console
-
-[formatters]
-keys = generic
-
-[logger_root]
-level = WARN
-handlers = console
-qualname =
-
-[logger_sqlalchemy]
-level = WARN
-handlers =
-qualname = sqlalchemy.engine
-
-[logger_alembic]
-level = INFO
-handlers =
-qualname = alembic
-
-[handler_console]
-class = StreamHandler
-args = (sys.stderr,)
-level = NOTSET
-formatter = generic
-
-[formatter_generic]
-format = %(levelname)-5.5s [%(name)s] %(message)s
-datefmt = %H:%M:%S
-
-
-----------------------------------------
-
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\alembic\env.py
-Содержимое:
-import os
-import sys
-import asyncio
-from logging.config import fileConfig
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
-from sqlalchemy import pool, MetaData
-from alembic import context
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from src.database import Base, metadata  # Использовать metadata
-from src.auth.models import User
-from src.projects.models import Project
-from src.config import settings
-
-config = context.config
-fileConfig(config.config_file_name)
-
-async_database_url = settings.database_url
-
-target_metadata = metadata
-
-def run_migrations_offline() -> None:
-    url = config.get_main_option("sqlalchemy.url")
-    context.configure(
-        url=url,
-        target_metadata=target_metadata,
-        literal_binds=True,
-        dialect_opts={"paramstyle": "named"}
-    )
-
-    with context.begin_transaction():
-        context.run_migrations()
-
-async def run_migrations_online() -> None:
-    connectable = create_async_engine(async_database_url, poolclass=pool.NullPool, connect_args={"check_same_thread": False})
-
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
-
-def do_run_migrations(connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata, render_as_batch=True)
-
-    with context.begin_transaction():
-        context.run_migrations()
-
-if context.is_offline_mode():
-    run_migrations_offline()
-else:
-    asyncio.run(run_migrations_online())
-
-
-----------------------------------------
-
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\src\config.py
+Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\config.py
 Содержимое:
 from pydantic_settings import BaseSettings
 
@@ -135,7 +16,7 @@ settings = Settings()
 
 ----------------------------------------
 
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\src\database.py
+Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\database.py
 Содержимое:
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
@@ -158,13 +39,13 @@ Base = declarative_base(metadata=metadata)
 
 ----------------------------------------
 
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\src\main.py
+Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\main.py
 Содержимое:
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from src.auth.router import auth_router
 from src.projects.router import project_router
 from src.database import database
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
@@ -180,28 +61,36 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
+# Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # URL вашего React фронт-энд приложения
+    allow_origins=["http://localhost:3000"],  # URL вашего React приложения
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Пример конечной точки для проверки
+@app.get("/")
+async def read_root():
+    return {"message": "Hello World"}
+
 ----------------------------------------
 
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\src\auth\auth.py
+Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\auth\auth.py
 Содержимое:
-from fastapi import Depends, HTTPException, status
+from fastapi import Request, Response, Depends
+from fastapi.exceptions import HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from starlette.status import HTTP_403_FORBIDDEN
 from src.database import async_session
 from src.auth import models, schemas, utils
 from src.config import settings
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 async def get_db():
     async with async_session() as session:
@@ -221,11 +110,18 @@ async def authenticate_user(db: AsyncSession, email: str, password: str):
         return False
     return user
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+
+async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)):
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authenticated",
+        )
+
     credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
+        status_code=HTTP_403_FORBIDDEN,
         detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
     )
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
@@ -243,7 +139,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
 
 ----------------------------------------
 
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\src\auth\models.py
+Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\auth\models.py
 Содержимое:
 from sqlalchemy import Boolean, Column, String, Integer, Enum, DateTime, func
 from sqlalchemy.ext.declarative import declarative_base
@@ -269,7 +165,7 @@ class User(Base):
 
 ----------------------------------------
 
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\src\auth\router.py
+Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\auth\router.py
 Содержимое:
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
@@ -280,28 +176,16 @@ from src.config import settings
 
 auth_router = APIRouter()
 
-@auth_router.post("/token", response_model=schemas.Token)
-async def login_for_access_token(
-        form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(auth.get_db)):
-    user = await auth.authenticate_user(db, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
-    access_token = utils.create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
-    return {"access_token": access_token, "token_type": "bearer"}
 
 @auth_router.post("/register", response_model=schemas.User)
 async def register_user(user_in: schemas.UserCreate, db: AsyncSession = Depends(auth.get_db)):
-    user = await auth.get_user_by_email(db, email=user_in.email)
+    user = await auth.get_user_by_email(db, user_in.email)
     if user:
         raise HTTPException(
-            status_code=400,
-            detail="Email already registered",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
         )
+
     user_data = user_in.dict()
     user_data.pop("password")
     user_in_db = models.User(**user_data, password_hash=utils.get_password_hash(user_in.password))
@@ -310,19 +194,37 @@ async def register_user(user_in: schemas.UserCreate, db: AsyncSession = Depends(
     await db.refresh(user_in_db)
     return user_in_db
 
-@auth_router.get("/users/me", response_model=schemas.User)
+
+@auth_router.post("/login")
+async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends(),
+                                 db: AsyncSession = Depends(auth.get_db)):
+    user = await auth.authenticate_user(db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+        )
+    access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+    access_token = utils.create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
+
+    response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@auth_router.get("/users/me/", response_model=schemas.User)
 async def read_users_me(current_user: schemas.User = Depends(auth.get_current_user)):
     return current_user
 
+
 @auth_router.post("/logout")
 async def logout(response: Response):
-    response.delete_cookie("session")
+    response.delete_cookie("access_token")
     return {"message": "Successfully logged out"}
 
 
 ----------------------------------------
 
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\src\auth\schemas.py
+Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\auth\schemas.py
 Содержимое:
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -363,12 +265,12 @@ class Token(BaseModel):
     token_type: str
 
 class TokenData(BaseModel):
-    username: str | None = None
+    email: Optional[str] = None
 
 
 ----------------------------------------
 
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\src\auth\utils.py
+Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\auth\utils.py
 Содержимое:
 from passlib.context import CryptContext
 from jose import jwt
@@ -393,10 +295,9 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
     return encoded_jwt
 
-
 ----------------------------------------
 
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\src\projects\models.py
+Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\projects\models.py
 Содержимое:
 from sqlalchemy import Column, String, Integer, Text, DateTime, func, ForeignKey
 from sqlalchemy.orm import relationship
@@ -418,9 +319,8 @@ class Project(Base):
 
 ----------------------------------------
 
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\src\projects\router.py
+Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\projects\router.py
 Содержимое:
-
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth.auth import get_current_user
@@ -428,7 +328,7 @@ from src.auth.models import User
 from src.projects.models import Project
 from src.database import async_session
 from src.projects import schemas
-
+import shutil
 
 project_router = APIRouter()
 
@@ -442,23 +342,23 @@ async def create_project(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    new_project = models.Project(**project.dict(), owner_id=current_user.id_user)
+    new_project = Project(**project.dict(), owner_id=current_user.id_user)
     db.add(new_project)
     await db.commit()
     await db.refresh(new_project)
     return new_project
 
 @project_router.post("/uploadfile/")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     file_location = f"files/{file.filename}"
     with open(file_location, "wb") as f:
-        f.write(file.file.read())
+        shutil.copyfileobj(file.file, f)
     return {"file_path": file_location}
 
 
 ----------------------------------------
 
-Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\src\projects\schemas.py
+Путь до файла: D:\PetProjects\GIT_Library\SPB-SO\est-1\projects\schemas.py
 Содержимое:
 from pydantic import BaseModel
 from typing import Optional

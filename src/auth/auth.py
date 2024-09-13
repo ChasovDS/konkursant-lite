@@ -1,5 +1,4 @@
-from fastapi import Request, Response, Depends
-from fastapi.exceptions import HTTPException
+from fastapi import Request, Response, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession

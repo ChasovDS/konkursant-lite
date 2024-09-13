@@ -1,8 +1,8 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from src.auth.router import auth_router
 from src.projects.router import project_router
 from src.database import database
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
@@ -18,6 +18,7 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
+# Настройка CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],  # URL вашего React приложения
@@ -25,3 +26,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Пример конечной точки для проверки
+@app.get("/")
+async def read_root():
+    return {"message": "Hello World"}
