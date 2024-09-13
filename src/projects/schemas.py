@@ -7,6 +7,9 @@ class ProjectCreate(BaseModel):
     description: Optional[str]
     file_path: str
 
+class ProjectEvaluation(BaseModel):
+    score: float
+
 class Project(BaseModel):
     id_project: int
     title: str
@@ -15,6 +18,8 @@ class Project(BaseModel):
     owner_id: int
     created_at: datetime
     updated_at: datetime
+    score: Optional[float] = None
+    status: str
 
     class Config:
         from_attributes = True

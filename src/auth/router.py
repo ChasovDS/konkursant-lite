@@ -54,8 +54,18 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
 async def read_users_me(current_user: schemas.User = Depends(auth.get_current_user)):
     return current_user
 
-
 @auth_router.post("/logout", tags=["Авторизация"])
 async def logout(response: Response):
     response.delete_cookie("access_token")
     return {"message": "Successfully logged out"}
+
+@auth_router.patch("/assign-role", tags=["Авторизация"])
+async def assign_role(email: str, role: str, current_user: schemas.User = Depends(auth.get_current_user), db: AsyncSession = Depends(auth.get_db)):
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="Not authorized to assign roles")
+    user = await auth.get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.role = role
+    await db.commit()
+    return {"message": f"Role {role} assigned to user {email}"}
