@@ -1,0 +1,13 @@
+fastapi[all]
+uvicorn
+python-jose
+alembic
+passlib[bcrypt]
+itsdangerous
+databases
+sqlalchemy
+fastapi-users[sqlalchemy]
+python-dotenv
+pydantic
+pydantic-settings
+aiosqlite
