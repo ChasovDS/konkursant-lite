@@ -15,7 +15,7 @@ async def get_db():
         yield session
 
 
-@project_router.post("/", response_model=schemas.Project)
+@project_router.post("/", response_model=schemas.Project, tags=["Проекты"])
 async def create_project(
         project: schemas.ProjectCreate,
         current_user: User = Depends(get_current_user),
@@ -28,7 +28,7 @@ async def create_project(
     return new_project
 
 
-@project_router.post("/uploadfile/")
+@project_router.post("/uploadfile/", tags=["Проекты"])
 async def upload_file(file: UploadFile = File(...), current_user: User = Depends(get_current_user),
                       db: AsyncSession = Depends(get_db)):
     file_location = f"files/{file.filename}"

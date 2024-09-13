@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from src.auth.router import auth_router
 from src.projects.router import project_router
+
 from src.database import database
 
 app = FastAPI()
@@ -28,6 +30,6 @@ app.add_middleware(
 )
 
 # Пример конечной точки для проверки
-@app.get("/")
+@app.get("/", tags=["Стартовая страница"])
 async def read_root():
-    return {"message": "Hello World"}
+    return {"message": "Добро пожаловать в API Конкурсант"}

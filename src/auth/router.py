@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 auth_router = APIRouter()
 
-@auth_router.post("/register", response_model=schemas.User)
+@auth_router.post("/register", response_model=schemas.User, tags=["Авторизация"])
 async def register_user(user_in: schemas.UserCreate, db: AsyncSession = Depends(auth.get_db)):
     user = await auth.get_user_by_email(db, user_in.email)
     if user:
@@ -30,7 +30,7 @@ async def register_user(user_in: schemas.UserCreate, db: AsyncSession = Depends(
     return user_in_db
 
 
-@auth_router.post("/login")
+@auth_router.post("/login", tags=["Авторизация"])
 async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends(),
                                  db: AsyncSession = Depends(auth.get_db)):
     user = await auth.authenticate_user(db, form_data.username, form_data.password)
@@ -50,12 +50,12 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
 
 
 
-@auth_router.get("/users/me/", response_model=schemas.User)
+@auth_router.get("/users/me/", response_model=schemas.User, tags=["Авторизация"])
 async def read_users_me(current_user: schemas.User = Depends(auth.get_current_user)):
     return current_user
 
 
-@auth_router.post("/logout")
+@auth_router.post("/logout", tags=["Авторизация"])
 async def logout(response: Response):
     response.delete_cookie("access_token")
     return {"message": "Successfully logged out"}
