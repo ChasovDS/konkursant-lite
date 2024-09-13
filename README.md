@@ -5,8 +5,8 @@
 1. Клонируйте репозиторий:
 
     ```bash
-    git clone <URL вашего репозитория>
-    cd <имя_директории>
+    git clone https://github.com/ChasovDS/konkursant-lite.git
+    cd konkursant-lite
     ```
 
 2. Установите необходимые зависимости:
