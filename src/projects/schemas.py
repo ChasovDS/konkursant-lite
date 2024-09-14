@@ -7,8 +7,6 @@ class ProjectCreate(BaseModel):
     description: Optional[str]
     file_path: str
 
-class ProjectEvaluation(BaseModel):
-    score: float
 
 class Project(BaseModel):
     id_project: int

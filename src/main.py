@@ -3,14 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.auth.router import auth_router
 from src.projects.router import project_router
+from src.review.router import review_router
 
 from src.database import database
 
 app = FastAPI()
 
 # Подключение к маршрутам
-app.include_router(auth_router, prefix="/auth")
-app.include_router(project_router, prefix="/projects")
+app.include_router(auth_router, prefix="/auth", tags=["Авторизация"])
+app.include_router(project_router, prefix="/projects", tags=["Проекты"])
+app.include_router(review_router, prefix="/reviews", tags=["Проверка"])
 
 @app.on_event("startup")
 async def startup():

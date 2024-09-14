@@ -8,12 +8,13 @@ class User(Base):
     __tablename__ = 'users'
 
     id_user = Column(Integer, primary_key=True, index=True)
-    full_name = Column(String(100), nullable=False)
-    email = Column(String(100), unique=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    full_name = Column(String, nullable=True)
     password_hash = Column(String(255), nullable=False)
-    role = Column(String(20), nullable=False, default='user')
+    is_active = Column(Integer, default=True)
+    role = Column(String, nullable=False, default='user')
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
-    # Добавление обратной связи
     projects = relationship("Project", back_populates="owner")
+    reviews = relationship("Review", back_populates="reviewer")

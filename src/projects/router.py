@@ -9,6 +9,7 @@ from src.auth.models import User
 from src.projects.models import Project
 from src.database import async_session
 from src.projects import schemas
+from src.projects.projects import process_uploaded_file
 import shutil
 
 project_router = APIRouter()
@@ -40,22 +41,6 @@ async def get_project(project_id: int,
         raise HTTPException(status_code=403, detail="Not authorized to view this project")
     return project
 
-@project_router.patch("/{project_id}/evaluate", response_model=schemas.Project, tags=["Проекты"])
-async def evaluate_project(project_id: int,
-                           evaluation: schemas.ProjectEvaluation,
-                           current_user: User = Depends(get_current_user),
-                           db: AsyncSession = Depends(get_db)):
-    query = select(Project).where(Project.id_project == project_id)
-    result = await db.execute(query)
-    project = result.scalars().first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    if current_user.role != 'reviewer':
-        raise HTTPException(status_code=403, detail="Not authorized to evaluate projects")
-    project.score = evaluation.score
-    project.status = 'evaluated'
-    await db.commit()
-    return project
 
 @project_router.get("/", response_model=List[schemas.Project], tags=["Проекты"])
 async def list_projects(current_user: User = Depends(get_current_user),
@@ -68,14 +53,18 @@ async def list_projects(current_user: User = Depends(get_current_user),
     projects = result.scalars().all()
     return projects
 
+
 @project_router.post("/uploadfile/", tags=["Проекты"])
 async def upload_file(file: UploadFile = File(...),
                       current_user: User = Depends(get_current_user),
                       db: AsyncSession = Depends(get_db)):
     file_location = f"files/{file.filename}"
+
+    # Сохранение файла
     with open(file_location, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
+    # Создание объекта проекта
     project = Project(
         title=file.filename,
         description='Uploaded file',
@@ -86,4 +75,11 @@ async def upload_file(file: UploadFile = File(...),
     await db.commit()
     await db.refresh(project)
 
+    # Обработка загруженного файла
+    await process_uploaded_file(file_location)
+
     return {"file_path": file_location, "project": project}
+
+
+
+

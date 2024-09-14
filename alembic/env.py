@@ -11,6 +11,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.database import Base, metadata  # Использовать metadata
 from src.auth.models import User
 from src.projects.models import Project
+from src.review.models import Review, Criterion
 from src.config import settings
 
 config = context.config

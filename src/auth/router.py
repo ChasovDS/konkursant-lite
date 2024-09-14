@@ -18,7 +18,7 @@ async def register_user(user_in: schemas.UserCreate, db: AsyncSession = Depends(
     if user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            detail="Электронная почта уже зарегистрирована"
         )
 
     user_data = user_in.dict()
@@ -35,12 +35,12 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
                                  db: AsyncSession = Depends(auth.get_db)):
     user = await auth.authenticate_user(db, form_data.username, form_data.password)
     if not user:
-        logger.error(f"Invalid login attempt for user {form_data.username}")
+        logger.error(f"Неверная попытка входа для пользователя {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Неверное имя пользователя или пароль",
         )
-    logger.info(f"User {user.email} authenticated successfully.")
+    logger.info(f"Пользователь {user.email} успешно прошел аутентификацию.")
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
     access_token = utils.create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
 
@@ -59,7 +59,7 @@ async def logout(response: Response):
     response.delete_cookie("access_token")
     return {"message": "Successfully logged out"}
 
-@auth_router.patch("/assign-role", tags=["Авторизация"])
+@auth_router.patch("/assign-role", tags=["Админ-панель"])
 async def assign_role(email: str, role: str, current_user: schemas.User = Depends(auth.get_current_user), db: AsyncSession = Depends(auth.get_db)):
     if current_user.role != 'admin':
         raise HTTPException(status_code=403, detail="Not authorized to assign roles")

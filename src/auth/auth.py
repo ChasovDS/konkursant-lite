@@ -39,10 +39,10 @@ async def get_user_by_email(db: AsyncSession, email: str):
 async def authenticate_user(db: AsyncSession, email: str, password: str):
     user = await get_user_by_email(db, email)
     if not user:
-        logger.error(f"User with email {email} not found.")
+        logger.error(f"Пользователь с электронной почтой {email} не найден.")
         return False
     if not verify_password(password, user.password_hash):
-        logger.error(f"Password verification failed for user {email}.")
+        logger.error(f"Не удалось проверить пароль для пользователя {email}.")
         return False
     return user
 
