@@ -16,7 +16,6 @@ class Project(BaseModel):
     owner_id: int
     created_at: datetime
     updated_at: datetime
-    score: Optional[float] = None
     status: str
 
     class Config:
