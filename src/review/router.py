@@ -17,8 +17,9 @@ async def get_db():
         yield session
 
 
-@review_router.post("/", response_model=ReviewBase, tags=["Проверка"])
-async def create_review_criterion(
+@review_router.post("/{project_id}", response_model=ReviewBase, tags=["Проверка"])
+async def create_review_for_project(
+        project_id: int,
         review: ReviewBase,
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
@@ -26,20 +27,23 @@ async def create_review_criterion(
     if current_user.role != 'reviewer':
         raise HTTPException(status_code=403, detail="У Вас нет прав для оценки проекта")
 
-    query = select(Project).where(Project.id_project == review.project_id).options(joinedload(Project.reviews))
+    # Найти проект по project_id
+    query = select(Project).where(Project.id_project == project_id).options(joinedload(Project.reviews))
     result = await db.execute(query)
     project = result.scalars().first()
 
     if not project:
-        raise HTTPException(status_code=404, detail="Стараница не найдена")
+        raise HTTPException(status_code=404, detail="Проект не найден")
 
+    # Создаем отзыв
     new_review_data = review.dict()
     new_review_data.pop('status', None)  # Удаляем статус, если он есть
     new_review_data.update({
-        "reviewer_id": current_user.id_user
+        "reviewer_id": current_user.id_user,
+        "project_id": project_id  # Устанавливаем project_id из маршрута
     })
 
-    new_review = Review(**new_review_data)
+    new_review = Review(**new_review_data)  # Здесь project_id будет с правильным значением
 
     project.reviews.append(new_review)
 
@@ -65,3 +69,40 @@ async def create_review_criterion(
         feedback=new_review.feedback,
         status=project.status
     )
+
+@review_router.get("/{project_id}", response_model=list[ReviewBase], tags=["Проверка"])
+async def get_project_reviews(
+        project_id: int,
+        current_user: User = Depends(get_current_user),
+        db: AsyncSession = Depends(get_db)
+):
+    # Найти проект по project_id
+    query = select(Project).where(Project.id_project == project_id).options(joinedload(Project.reviews))
+    result = await db.execute(query)
+    project = result.scalars().first()
+
+    if not project:
+        raise HTTPException(status_code=404, detail="Проект не найден")
+
+    # Проверяем роль пользователя
+    if current_user.role != 'reviewer' and project.owner_id != current_user.id_user:
+        raise HTTPException(status_code=403, detail="У вас нет доступа к этому проекту")
+
+    # Генерируем список отзывов в формате ReviewBase
+    return [
+        ReviewBase(
+            project_id=review.project_id,
+            team_experience=review.team_experience,
+            project_relevance=review.project_relevance,
+            solution_uniqueness=review.solution_uniqueness,
+            implementation_scale=review.implementation_scale,
+            development_potential=review.development_potential,
+            project_transparency=review.project_transparency,
+            feasibility_and_effectiveness=review.feasibility_and_effectiveness,
+            additional_resources=review.additional_resources,
+            planned_expenses=review.planned_expenses,
+            budget_realism=review.budget_realism,
+            feedback=review.feedback,
+            status=project.status  # Статус проекта
+        ) for review in project.reviews
+    ]

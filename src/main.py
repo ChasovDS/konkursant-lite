@@ -10,7 +10,7 @@ from src.database import database
 app = FastAPI()
 
 # Подключение к маршрутам
-app.include_router(auth_router, prefix="/auth", tags=["Авторизация"])
+app.include_router(auth_router, prefix="/auth")
 app.include_router(project_router, prefix="/projects", tags=["Проекты"])
 app.include_router(review_router, prefix="/reviews", tags=["Проверка"])
 
@@ -25,7 +25,7 @@ async def shutdown():
 # Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # URL вашего React приложения
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

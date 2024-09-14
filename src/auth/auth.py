@@ -11,9 +11,6 @@ from src.config import settings
 
 import bcrypt
 
-
-
-
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,18 +50,12 @@ async def get_current_user(request: Request, db: AsyncSession = Depends(get_db))
         logger.error("No token found in cookies.")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authenticated",
+            detail="Не аутентифицирован",
         )
-
-    # Убираем Bearer из токена
-    if token.startswith("Bearer "):
-        token = token[len("Bearer "):]
-
-    logger.info(f"Received token after stripping Bearer: {token}")
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Could not validate credentials",
+        detail="Не удалось подтвердить учетные данные",
     )
 
     try:

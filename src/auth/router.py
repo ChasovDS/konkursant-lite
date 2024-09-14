@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import timedelta
+
 from src.auth import schemas, auth, utils, models
 from src.config import settings
+
 import logging
 
 # Настройка логирования
@@ -44,7 +46,7 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
     access_token = utils.create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
 
-    response.set_cookie(key="access_token", value=f"Bearer {access_token}", httponly=True)
+    response.set_cookie(key="access_token", value=access_token, httponly=True)
     logger.info(f"Token set in cookie for user {user.email}")
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -58,6 +60,8 @@ async def read_users_me(current_user: schemas.User = Depends(auth.get_current_us
 async def logout(response: Response):
     response.delete_cookie("access_token")
     return {"message": "Successfully logged out"}
+
+
 
 @auth_router.patch("/assign-role", tags=["Админ-панель"])
 async def assign_role(email: str, role: str, current_user: schemas.User = Depends(auth.get_current_user), db: AsyncSession = Depends(auth.get_db)):

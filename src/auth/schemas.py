@@ -6,6 +6,7 @@ import enum
 class UserRole(str, enum.Enum):
     user = "user"
     reviewer = "reviewer"
+    admin = "admin"
 
 class UserBase(BaseModel):
     full_name: str
