@@ -12,3 +12,4 @@ pydantic-settings
 aiosqlite
 bcrypt==4.0.0
 passlib==1.7.4
+python-docx
