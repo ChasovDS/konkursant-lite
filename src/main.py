@@ -7,7 +7,9 @@ from src.review.router import review_router
 
 from src.database import database
 
-app = FastAPI()
+app = FastAPI(
+    title="Конкурсант API"
+)
 
 # Подключение к маршрутам
 app.include_router(auth_router, prefix="/auth")
