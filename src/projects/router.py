@@ -158,9 +158,9 @@ async def get_json_data(project_id: int, current_user: User = Depends(get_curren
 
 @project_router.delete("/delete/{project_id}/", tags=["Проекты"])
 async def delete_project(
-        project_id: int,
-        current_user=Depends(get_current_user),
-        db: AsyncSession = Depends(utils.get_db)
+    project_id: int,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(utils.get_db)
 ):
     # Получаем проект из базы данных
     result = await db.execute(select(Project).filter(Project.id_project == project_id))
@@ -171,7 +171,7 @@ async def delete_project(
         raise HTTPException(status_code=404, detail="Проект не найден.")
 
     # Проверка прав пользователя
-    if project.owner_id != current_user.id_user:
+    if current_user.role not in ["admin", "reviewer"] and project.owner_id != current_user.id_user:
         raise HTTPException(status_code=403, detail="У вас нет прав удалять этот проект.")
 
     # Удаление связанных данных проекта
@@ -196,3 +196,17 @@ async def delete_project(
     except Exception as e:
         logger.error(f"Ошибка при удалении проекта и связанных данных: {e}")
         raise HTTPException(status_code=500, detail="Ошибка сервера при удалении проекта.")
+
+
+@project_router.get("/{project_id}", response_model=schemas.Project, tags=["Проекты"])
+async def get_project(project_id: int,
+                      current_user: User = Depends(get_current_user),
+                      db: AsyncSession = Depends(utils.get_db)):
+    query = select(Project).where(Project.id_project == project_id)
+    result = await db.execute(query)
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if project.owner_id != current_user.id_user and current_user.role not in ['admin', 'reviewer']:
+        raise HTTPException(status_code=403, detail="Not authorized to view this project")
+    return project

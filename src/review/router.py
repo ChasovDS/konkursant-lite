@@ -113,16 +113,16 @@ async def get_verified_projects(
         current_user: User = Depends(get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    # Только пользователи с ролью 'reviewer' и 'admin' могут получать список проверенных проектов
+    # Проверка прав доступа
     if current_user.role not in ['reviewer', 'admin']:
         raise HTTPException(status_code=403, detail="У вас нет доступа к этой информации")
 
-    # Получить все проекты со статусом 'verified'
-    query = select(Project).where(Project.status == 'verified').options(joinedload(Project.reviews))
+    # Получение проектов с отзывами
+    query = select(Project).options(joinedload(Project.reviews))
     result = await db.execute(query)
-    projects = result.scalars().all()
+    projects = result.unique().scalars().all()  # Добавлен unique()
 
-    # Формирование списка отзывов для каждого проверенного проекта
+    # Формирование списка отзывов
     verified_reviews = []
     for project in projects:
         for review in project.reviews:
@@ -143,3 +143,4 @@ async def get_verified_projects(
             ))
 
     return verified_reviews
+
